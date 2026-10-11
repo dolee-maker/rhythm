@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>먼작리 - 먼가 작고 귀여운 4키 리듬게임</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Jua', 'Gaegu', sans-serif;
+      touch-action: none;
+      overscroll-behavior: none;
+      background-color: #fef9f3;
+    }
+    .kawaii-card {
+      box-shadow: 0 14px 35px -6px rgba(244, 114, 182, 0.22), 0 6px 16px -4px rgba(0, 0, 0, 0.06);
+    }
+    .kawaii-btn {
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .kawaii-btn:active {
+      transform: scale(0.94);
+    }
+    .safe-pt {
+      padding-top: max(env(safe-area-inset-top, 0px), 8px);
+    }
+    .safe-pb {
+      padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+    }
+  </style>
+</head>
+<body class="h-full w-full overflow-hidden text-slate-800 flex flex-col justify-between select-none">
+
+  <!-- 전체 화면 배경 (게임화면 일러스트 연동) -->
+  <div id="fullBgLayer" class="fixed inset-0 z-0 bg-cover bg-center opacity-40 transition-all duration-700 pointer-events-none scale-105"></div>
+  <div class="fixed inset-0 z-0 bg-gradient-to-b from-white/75 via-pink-50/60 to-amber-50/80 pointer-events-none"></div>
+
+  <!-- 인게임 상단 헤더 -->
+  <header class="relative z-20 flex items-center justify-between px-3 py-1.5 safe-pt w-full max-w-md mx-auto">
+    <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full shadow-sm border border-pink-100">
+      <span class="text-xs text-pink-500 font-bold">SCORE</span>
+      <span id="scoreText" class="text-sm font-black text-slate-700 tracking-wider">000000</span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="w-24 sm:w-32 bg-white/80 backdrop-blur-md rounded-full h-3.5 p-0.5 border border-pink-100 shadow-inner overflow-hidden flex items-center">
+        <div id="progressBar" class="bg-gradient-to-r from-pink-400 to-amber-300 h-full rounded-full transition-all duration-100" style="width: 0%"></div>
+      </div>
+      <button id="pauseBtn" class="kawaii-btn w-8 h-8 rounded-full bg-white/90 backdrop-blur-md border border-pink-200 text-pink-400 flex items-center justify-center shadow-sm active:scale-90">
+        <i class="fa-solid fa-pause text-xs"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 리듬게임 메인 캔버스 영역 -->
+  <main class="relative z-10 flex-1 w-full max-w-md mx-auto px-2 flex flex-col justify-center items-center overflow-hidden">
+    <div id="canvasWrapper" class="relative w-full h-full rounded-3xl overflow-hidden shadow-xl border-2 border-pink-200/60 bg-white/30 backdrop-blur-sm">
+      <!-- 캔버스 자체 내부 배경 -->
+      <div id="canvasBgLayer" class="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none transition-all duration-700"></div>
+      <canvas id="gameCanvas" class="relative z-10 w-full h-full block cursor-pointer"></canvas>
+    </div>
+  </main>
+
+  <!-- 안전 여백 바닥 -->
+  <div class="relative z-10 safe-pb"></div>
+
+  <!-- 시작 화면 모달 (원래 요청하셨던 기본 전체화면 커버 레이아웃) -->
+  <div id="startModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+    <!-- 시작 화면 전체 배경 일러스트 (저장소 시작화면 연동 + 블러 효과) -->
+    <div id="startBgLayer" class="absolute inset-0 bg-cover bg-center pointer-events-none transition-all duration-700 filter blur-sm scale-105"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-white/30 via-white/50 to-pink-100/70 pointer-events-none"></div>
+
+    <div class="relative z-10 w-full max-w-xs sm:max-w-sm bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-5 kawaii-card flex flex-col gap-3 my-auto shadow-2xl border border-pink-100">
+      <!-- 타이틀 배너 -->
+      <div class="text-center">
+        <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-pink-100 text-pink-600 text-xs font-bold mb-1 shadow-sm">
+          <span>🌸 먼작귀 4키 리듬게임</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-pink-500 tracking-tight drop-shadow-sm">먼 작 리</h1>
+        <p class="text-xs text-slate-500 mt-0.5">치이카와 친구들과 함께하는 리듬 타임!</p>
+      </div>
+
+      <!-- 곡 선택 (GitHub songs 폴더 실시간 연동) -->
+      <div class="bg-pink-50/70 rounded-2xl p-2.5 border border-pink-100/80">
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs text-pink-600 font-bold flex items-center gap-1">
+            <i class="fa-solid fa-music"></i> 연주할 노래
+          </label>
+          <span id="songCountBadge" class="text-[10px] text-pink-400 font-medium">곡 불러오는 중...</span>
+        </div>
+        <div class="flex flex-col gap-1.5 max-h-36 overflow-y-auto pr-0.5" id="songSelectGroup">
+          <div class="text-xs text-slate-400 py-3 text-center">GitHub 저장소에서 곡을 불러오는 중...</div>
+        </div>
+      </div>
+
+      <!-- 난이도 선택 -->
+      <div class="bg-amber-50/70 rounded-2xl p-2.5 border border-amber-100/80">
+        <label class="text-[11px] text-amber-700 font-bold block mb-1">난이도</label>
+        <select id="diffSelect" class="w-full bg-white text-slate-700 rounded-xl px-2 py-1.5 text-xs font-bold border border-amber-200 outline-none">
+          <option value="easy">이지 (Easy) 🍓</option>
+          <option value="normal" selected>노멀 (Normal) 🍡</option>
+          <option value="hard">하드 (Hard) ⚡</option>
+        </select>
+      </div>
+
+      <!-- 시작 버튼 -->
+      <button id="startBtn" class="kawaii-btn w-full py-3.5 bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 text-white rounded-2xl font-black text-base shadow-lg shadow-pink-300/50 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-play"></i>
+        <span>연주 시작하기!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 일시정지 모달 -->
+  <div id="pauseModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div class="bg-white/95 rounded-3xl p-5 kawaii-card w-full max-w-xs text-center border border-pink-200">
+      <div class="text-3xl mb-1">💤</div>
+      <h2 class="text-xl font-bold text-slate-700 mb-1">잠깐 쉬는 시간</h2>
+      <p class="text-xs text-slate-400 mb-4">치이카와가 기다리고 있어요!</p>
+      <div class="flex flex-col gap-2">
+        <button id="resumeBtn" class="kawaii-btn w-full py-2.5 bg-pink-400 text-white rounded-xl font-bold text-sm shadow-md">
+          이어하기
+        </button>
+        <button id="restartBtn" class="kawaii-btn w-full py-2 bg-amber-400 text-white rounded-xl font-bold text-sm shadow-md">
+          다시하기
+        </button>
+        <button id="quitBtn" class="kawaii-btn w-full py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm">
+          곡 선택으로 나가기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 모달 -->
+  <div id="resultModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-sm">
+    <div class="bg-white/95 rounded-3xl p-5 kawaii-card w-full max-w-xs text-center border border-pink-200 shadow-2xl">
+      <div id="resultIcon" class="text-4xl mb-1">🎉</div>
+      <h2 id="resultTitle" class="text-2xl font-black text-pink-500 mb-0.5">클리어 성공!</h2>
+      <p id="resultSub" class="text-xs text-slate-400 mb-3">와-앗! 훌륭하게 완주했어!</p>
+
+      <div class="bg-pink-50/80 rounded-2xl p-3 border border-pink-100 mb-3">
+        <div class="text-xs text-slate-400">최종 점수</div>
+        <div id="resultScore" class="text-3xl font-black text-slate-800 tracking-wider">0</div>
+        <div class="mt-2 pt-2 border-t border-pink-200/50 flex justify-around text-xs text-slate-600 font-bold">
+          <div>최대 콤보: <span id="resultCombo" class="text-pink-500">0</span></div>
+          <div>정확도: <span id="resultAcc" class="text-amber-500">100%</span></div>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="resultRetryBtn" class="kawaii-btn flex-1 py-2.5 bg-pink-400 text-white rounded-xl font-bold text-sm shadow-md">
+          다시하기
+        </button>
+        <button id="resultHomeBtn" class="kawaii-btn flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm">
+          메인으로
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================================
+       1. 전역 상태 및 자산 매핑
+       ======================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let canvasW = 320;
+    let canvasH = 540;
+    let dpr = window.devicePixelRatio || 1;
+
+    // 게임 상태
+    let isPlaying = false;
+    let isPaused = false;
+    let score = 0;
+    let combo = 0;
+    let maxCombo = 0;
+    let totalNotes = 0;
+    let hitNotes = 0;
+    let currentSong = null; // 선택된 음원 객체 { name, url, duration }
+    let songList = [];
+    let currentDiff = 'normal';
+    let noteSpeedMultiplier = 1.5;
+    let songDuration = 32; // 초
+    let songStartTime = 0;
+    let pauseStartTime = 0;
+    let totalPausedDuration = 0;
+    let bgAudio = null;
+
+    // 정밀 오디오 마스터 클록 보간 변수
+    let audioBaseTime = 0;
+    let audioBasePerf = 0;
+    let isAudioClockReady = false;
+
+    // 4개 레인 키 & 캐릭터 정보 (1번 레인 핑크 / 2번 레인 파랑으로 스왑)
+    const lanes = [
+      { key: 'KeyD', name: '치이카와', color: '#f472b6', lightColor: '#fce7f3' },
+      { key: 'KeyF', name: '하치와레', color: '#60a5fa', lightColor: '#dbeafe' },
+      { key: 'KeyJ', name: '우사기',   color: '#fbbf24', lightColor: '#fef3c7' },
+      { key: 'KeyK', name: '모몽가',   color: '#fff2d8', lightColor: '#fff9ed' }
+    ];
+    const keyStates = [false, false, false, false];
+
+    // 판정선 위치 (캔버스 바닥에서 약 18% 위)
+    const judgeLineYRatio = 0.82;
+
+    // 활성 노트 및 이펙트 리스트
+    let notes = [];
+    let shockwaves = [];
+    let sparks = [];
+    let judgePopup = null;
+
+    const barImages = [null, null, null, null];
+    const barImagesLoaded = [false, false, false, false];
+    let noteCustomImg = null;
+    let noteCustomImgLoaded = false;
+
+    // 노트 이미지 배경(흰색, 미색, 회색 체크무늬 등) 완벽 제거 및 투명화
+    function processNoteImage(rawImg) {
+      try {
+        const origW = rawImg.naturalWidth || rawImg.width;
+        const origH = rawImg.naturalHeight || rawImg.height;
+        if (!origW || !origH) return rawImg;
+
+        const c = document.createElement('canvas');
+        c.width = origW;
+        c.height = origH;
+        const cCtx = c.getContext('2d');
+        cCtx.drawImage(rawImg, 0, 0);
+
+        const imgData = cCtx.getImageData(0, 0, origW, origH);
+        const d = imgData.data;
+
+        // 이미 알파 투명도가 잘 되어 있는 정상 PNG인지 체크 (가장자리 픽셀 중 투명 픽셀 비율 확인)
+        let edgeTransCount = 0;
+        let edgeTotal = 0;
+        for (let x = 0; x < origW; x += 4) {
+          if (d[x * 4 + 3] < 20) edgeTransCount++;
+          if (d[((origH - 1) * origW + x) * 4 + 3] < 20) edgeTransCount++;
+          edgeTotal += 2;
+        }
+        for (let y = 0; y < origH; y += 4) {
+          if (d[(y * origW) * 4 + 3] < 20) edgeTransCount++;
+          if (d[(y * origW + (origW - 1)) * 4 + 3] < 20) edgeTransCount++;
+          edgeTotal += 2;
+        }
+
+        // 이미 외곽선 바깥이 투명한 PNG라면 원본 유지
+        if (edgeTransCount / edgeTotal > 0.6) {
+          return c;
+        }
+
+        // 모서리 4점의 대표 배경색 샘플링
+        const cornerIndices = [
+          0,
+          (origW - 1) * 4,
+          ((origH - 1) * origW) * 4,
+          ((origH - 1) * origW + (origW - 1)) * 4
+        ];
+        const cornerColors = cornerIndices.map(idx => ({
+          r: d[idx],
+          g: d[idx + 1],
+          b: d[idx + 2],
+          a: d[idx + 3]
+        }));
+
+        // 배경 픽셀 판별 (흰색, 밝은 미색, 모눈 회색 격자, 모서리 색상 근접도)
+        const isBackgroundPixel = (idx) => {
+          if (d[idx + 3] < 25) return true; // 이미 투명
+          const r = d[idx], g = d[idx + 1], b = d[idx + 2];
+          const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+          const maxVal = Math.max(r, g, b);
+          const minVal = Math.min(r, g, b);
+          const sat = maxVal > 0 ? (maxVal - minVal) / maxVal : 0;
+
+          // 1. 순백색 및 밝은 미색 배경 (R,G,B 모두 225 이상)
+          if (r >= 225 && g >= 225 && b >= 225) return true;
+
+          // 2. 가짜 투명 PNG 체크무늬 격자 (회색/밝은 회색 타일, 채도 낮고 밝기 130 이상)
+          if (sat < 0.18 && brightness >= 135) return true;
+
+          // 3. 네 모서리 기준 샘플링 색상과 유클리디안 거리가 35 이하로 가까운 경우
+          for (let bg of cornerColors) {
+            if (bg.a > 100) {
+              const dist = Math.hypot(r - bg.r, g - bg.g, b - bg.b);
+              if (dist < 38) return true;
+            }
+          }
+          return false;
+        };
+
+        // 4면 경계에서 진입하는 BFS 플러드필 (내부 캐릭터 눈/배는 보존하고 바깥 배경만 정밀 투명화)
+        const visited = new Uint8Array(origW * origH);
+        const queue = [];
+
+        for (let x = 0; x < origW; x++) {
+          const t = x, b = (origH - 1) * origW + x;
+          if (isBackgroundPixel(t * 4)) { visited[t] = 1; queue.push(t); }
+          if (isBackgroundPixel(b * 4)) { visited[b] = 1; queue.push(b); }
+        }
+        for (let y = 0; y < origH; y++) {
+          const l = y * origW, r = y * origW + (origW - 1);
+          if (!visited[l] && isBackgroundPixel(l * 4)) { visited[l] = 1; queue.push(l); }
+          if (!visited[r] && isBackgroundPixel(r * 4)) { visited[r] = 1; queue.push(r); }
+        }
+
+        let head = 0;
+        while (head < queue.length) {
+          const curr = queue[head++];
+          const cx = curr % origW, cy = Math.floor(curr / origW);
+          d[curr * 4 + 3] = 0; // 알파 투명화
+
+          const neighbors = [
+            cy > 0 ? (cy - 1) * origW + cx : -1,
+            cy < origH - 1 ? (cy + 1) * origW + cx : -1,
+            cx > 0 ? cy * origW + (cx - 1) : -1,
+            cx < origW - 1 ? cy * origW + (cx + 1) : -1
+          ];
+
+          for (let nb of neighbors) {
+            if (nb !== -1 && !visited[nb]) {
+              visited[nb] = 1;
+              if (isBackgroundPixel(nb * 4)) {
+                queue.push(nb);
+              }
+            }
+          }
+        }
+
+        // 가장자리 안티에일리어싱 (소프트 페더링)
+        for (let y = 1; y < origH - 1; y++) {
+          for (let x = 1; x < origW - 1; x++) {
+            const idx = (y * origW + x) * 4;
+            if (d[idx + 3] > 0) {
+              // 인접 픽셀에 투명 픽셀이 있는 경계선 부근 처리
+              const leftAlpha = d[(y * origW + (x - 1)) * 4 + 3];
+              const rightAlpha = d[(y * origW + (x + 1)) * 4 + 3];
+              const topAlpha = d[((y - 1) * origW + x) * 4 + 3];
+              const botAlpha = d[((y + 1) * origW + x) * 4 + 3];
+              if (leftAlpha === 0 || rightAlpha === 0 || topAlpha === 0 || botAlpha === 0) {
+                // 경계가 흰색 잔상으로 보이지 않도록 채도/알파 살짝 부드럽게 조정
+                if (d[idx] > 220 && d[idx + 1] > 220 && d[idx + 2] > 220) {
+                  d[idx + 3] = 0;
+                }
+              }
+            }
+          }
+        }
+
+        cCtx.putImageData(imgData, 0, 0);
+
+        // 컨텐츠 경계에 맞춰 타이트하게 오토 크롭 (빈 여백 제거)
+        let minX = origW, maxX = 0, minY = origH, maxY = 0;
+        let hasContent = false;
+        for (let y = 0; y < origH; y++) {
+          for (let x = 0; x < origW; x++) {
+            if (d[(y * origW + x) * 4 + 3] > 30) {
+              hasContent = true;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        if (hasContent && (maxX - minX > 5) && (maxY - minY > 5)) {
+          const cropW = maxX - minX + 1;
+          const cropH = maxY - minY + 1;
+          const cropCanvas = document.createElement('canvas');
+          cropCanvas.width = cropW;
+          cropCanvas.height = cropH;
+          const cropCtx = cropCanvas.getContext('2d');
+          cropCtx.drawImage(c, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+          return cropCanvas;
+        }
+
+        return c;
+      } catch (e) {
+        console.warn('processNoteImage error:', e);
+        return rawImg;
+      }
+    }
+
+    // 투명 배경 & 수평 각도 보정 및 언샵 필터
+    function processBarImage(rawImg) {
+      try {
+        const origW = rawImg.naturalWidth || rawImg.width;
+        const origH = rawImg.naturalHeight || rawImg.height;
+        if (!origW || !origH) return null;
+
+        // 원본 해상도 2배 이상 슈퍼샘플링
+        const scaleFactor = Math.max(2, Math.ceil(400 / Math.max(origW, origH)));
+        const upW = origW * scaleFactor;
+        const upH = origH * scaleFactor;
+
+        const upCanvas = document.createElement('canvas');
+        upCanvas.width = upW;
+        upCanvas.height = upH;
+        const upCtx = upCanvas.getContext('2d');
+        upCtx.imageSmoothingEnabled = true;
+        upCtx.imageSmoothingQuality = 'high';
+        upCtx.drawImage(rawImg, 0, 0, upW, upH);
+
+        const imgData = upCtx.getImageData(0, 0, upW, upH);
+        const data = imgData.data;
+
+        // 투명 체크무늬(Fake PNG Grid) 및 흰색 배경 제거 플러드필
+        const isBgPixel = (idx) => {
+          if (data[idx + 3] < 20) return true;
+          const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+          const brightness = (r + g + b) / 3;
+          const maxVal = Math.max(r, g, b);
+          const minVal = Math.min(r, g, b);
+          const sat = maxVal > 0 ? (maxVal - minVal) / maxVal : 0;
+          // 회색/흰색 격자 패턴 or 순백색 배경
+          return (brightness >= 130 && sat < 0.22) || (r >= 235 && g >= 235 && b >= 235);
+        };
+
+        const visited = new Uint8Array(upW * upH);
+        const queue = [];
+
+        // 4면 경계에서 진입
+        for (let x = 0; x < upW; x++) {
+          const top = x;
+          const bot = (upH - 1) * upW + x;
+          if (isBgPixel(top * 4)) { visited[top] = 1; queue.push(top); }
+          if (isBgPixel(bot * 4)) { visited[bot] = 1; queue.push(bot); }
+        }
+        for (let y = 0; y < upH; y++) {
+          const left = y * upW;
+          const right = y * upW + (upW - 1);
+          if (!visited[left] && isBgPixel(left * 4)) { visited[left] = 1; queue.push(left); }
+          if (!visited[right] && isBgPixel(right * 4)) { visited[right] = 1; queue.push(right); }
+        }
+
+        let head = 0;
+        while (head < queue.length) {
+          const curr = queue[head++];
+          const cx = curr % upW;
+          const cy = Math.floor(curr / upW);
+          data[curr * 4 + 3] = 0; // 투명화
+
+          const neighbors = [
+            cy > 0 ? (cy - 1) * upW + cx : -1,
+            cy < upH - 1 ? (cy + 1) * upW + cx : -1,
+            cx > 0 ? cy * upW + (cx - 1) : -1,
+            cx < upW - 1 ? cy * upW + (cx + 1) : -1
+          ];
+          for (let nb of neighbors) {
+            if (nb !== -1 && !visited[nb]) {
+              visited[nb] = 1;
+              if (isBgPixel(nb * 4)) queue.push(nb);
+            }
+          }
+        }
+        upCtx.putImageData(imgData, 0, 0);
+
+        // PCA 주성분 분석으로 수평 각도 계산
+        let sumX = 0, sumY = 0, count = 0;
+        for (let y = 0; y < upH; y++) {
+          for (let x = 0; x < upW; x++) {
+            if (data[(y * upW + x) * 4 + 3] > 40) {
+              sumX += x;
+              sumY += y;
+              count++;
+            }
+          }
+        }
+        if (count === 0) return upCanvas;
+
+        const meanX = sumX / count;
+        const meanY = sumY / count;
+        let u20 = 0, u02 = 0, u11 = 0;
+        for (let y = 0; y < upH; y++) {
+          for (let x = 0; x < upW; x++) {
+            if (data[(y * upW + x) * 4 + 3] > 40) {
+              const dx = x - meanX;
+              const dy = y - meanY;
+              u20 += dx * dx;
+              u02 += dy * dy;
+              u11 += dx * dy;
+            }
+          }
+        }
+        const theta = 0.5 * Math.atan2(2 * u11, u20 - u02);
+
+        // 회전 시 모서리가 1px도 안 잘리도록 여유 캔버스 확보
+        const diag = Math.ceil(Math.hypot(upW, upH) * 1.6) + 60;
+        const rotCanvas = document.createElement('canvas');
+        rotCanvas.width = diag;
+        rotCanvas.height = diag;
+        const rotCtx = rotCanvas.getContext('2d');
+        rotCtx.imageSmoothingEnabled = true;
+        rotCtx.imageSmoothingQuality = 'high';
+        rotCtx.translate(diag / 2, diag / 2);
+        rotCtx.rotate(-theta);
+        rotCtx.drawImage(upCanvas, -upW / 2, -upH / 2);
+
+        // 가로가 세로보다 길도록 체크
+        let rotData = rotCtx.getImageData(0, 0, diag, diag);
+        let rData = rotData.data;
+        let minX = diag, maxX = 0, minY = diag, maxY = 0;
+        let hasPixels = false;
+        for (let y = 0; y < diag; y++) {
+          for (let x = 0; x < diag; x++) {
+            if (rData[(y * diag + x) * 4 + 3] > 30) {
+              hasPixels = true;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        if (!hasPixels) return upCanvas;
+
+        if ((maxX - minX + 1) < (maxY - minY + 1) * 1.1) {
+          rotCtx.setTransform(1, 0, 0, 1, 0, 0);
+          rotCtx.clearRect(0, 0, diag, diag);
+          rotCtx.translate(diag / 2, diag / 2);
+          rotCtx.rotate(-theta + Math.PI / 2);
+          rotCtx.drawImage(upCanvas, -upW / 2, -upH / 2);
+          rotData = rotCtx.getImageData(0, 0, diag, diag);
+          rData = rotData.data;
+          minX = diag; maxX = 0; minY = diag; maxY = 0;
+          for (let y = 0; y < diag; y++) {
+            for (let x = 0; x < diag; x++) {
+              if (rData[(y * diag + x) * 4 + 3] > 30) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+              }
+            }
+          }
+        }
+
+        // 손잡이 끝과 가시 끝이 절대 안 잘리도록 넉넉한 20px 패딩
+        const pad = 20;
+        const cropX = Math.max(0, minX - pad);
+        const cropY = Math.max(0, minY - pad);
+        const cropW = Math.min(diag - cropX, (maxX - minX + 1) + pad * 2);
+        const cropH = Math.min(diag - cropY, (maxY - minY + 1) + pad * 2);
+
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = cropW;
+        finalCanvas.height = cropH;
+        const finalCtx = finalCanvas.getContext('2d');
+        finalCtx.imageSmoothingEnabled = true;
+        finalCtx.imageSmoothingQuality = 'high';
+        finalCtx.drawImage(rotCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+        return finalCanvas;
+      } catch (err) {
+        console.warn('processBarImage error:', err);
+        return rawImg;
+      }
+    }
+
+    // GitHub 저장소 파일 자동 로더
+    function loadGitHubCustomAssets() {
+      const repoUser = 'dolee-maker';
+      const repoName = 'rhythm';
+      const jsdelivrBase = `https://cdn.jsdelivr.net/gh/${repoUser}/${repoName}@main/`;
+      const rawBase = `https://raw.githubusercontent.com/${repoUser}/${repoName}/main/`;
+
+      function tryLoadBg(baseName, onFound) {
+        const exts = ['.png', '.jpg', '.jpeg', '.webp'];
+        let idx = 0;
+        function tryNext() {
+          if (idx >= exts.length) return;
+          const ext = exts[idx++];
+          const encoded = encodeURIComponent(baseName + ext);
+          const testImg = new Image();
+          testImg.crossOrigin = 'anonymous';
+          testImg.onload = () => onFound(jsdelivrBase + encoded);
+          testImg.onerror = () => tryNext();
+          testImg.src = jsdelivrBase + encoded;
+        }
+        tryNext();
+      }
+
+      // 시작화면
+      tryLoadBg('시작화면', (url) => {
+        const bgLayer = document.getElementById('startBgLayer');
+        if (bgLayer) bgLayer.style.backgroundImage = `url('${url}')`;
+      });
+
+      // 게임화면
+      tryLoadBg('게임화면', (url) => {
+        const fullBg = document.getElementById('fullBgLayer');
+        const canvasBg = document.getElementById('canvasBgLayer');
+        if (fullBg) fullBg.style.backgroundImage = `url('${url}')`;
+        if (canvasBg) canvasBg.style.backgroundImage = `url('${url}')`;
+      });
+
+      // 노트.png 이미지 로드 (jsDelivr 및 GitHub Raw)
+      function tryLoadNote() {
+        const exts = ['.png', '.webp', '.jpg', '.jpeg'];
+        let idx = 0;
+        function tryNext() {
+          if (idx >= exts.length) return;
+          const ext = exts[idx++];
+          const encoded = encodeURIComponent('노트' + ext);
+          const testImg = new Image();
+          testImg.crossOrigin = 'anonymous';
+          testImg.onload = () => {
+            noteCustomImg = processNoteImage(testImg);
+            noteCustomImgLoaded = true;
+          };
+          testImg.onerror = () => tryNext();
+          testImg.src = jsdelivrBase + encoded;
+        }
+        tryNext();
+      }
+      tryLoadNote();
+
+      // 바1, 바2, 바3, 바4
+      const barNames = ['바1', '바2', '바3', '바4'];
+      barNames.forEach((bName, laneIdx) => {
+        const exts = ['.png', '.jpg', '.jpeg', '.webp'];
+        let idx = 0;
+        function tryNextBar() {
+          if (idx >= exts.length) return;
+          const ext = exts[idx++];
+          const encoded = encodeURIComponent(bName + ext);
+          const rawImg = new Image();
+          rawImg.crossOrigin = 'anonymous';
+          rawImg.onload = () => {
+            const processed = processBarImage(rawImg);
+            barImages[laneIdx] = processed || rawImg;
+            barImagesLoaded[laneIdx] = true;
+          };
+          rawImg.onerror = () => tryNextBar();
+          rawImg.src = jsdelivrBase + encoded;
+        }
+        tryNextBar();
+      });
+
+      // GitHub Contents API 폴백
+      fetch(`https://api.github.com/repos/${repoUser}/${repoName}/contents`)
+        .then(res => res.json())
+        .then(files => {
+          if (!Array.isArray(files)) return;
+          files.forEach(f => {
+            const name = f.name;
+            const downloadUrl = f.download_url;
+            if (name.startsWith('시작화면')) {
+              const bgLayer = document.getElementById('startBgLayer');
+              if (bgLayer) bgLayer.style.backgroundImage = `url('${downloadUrl}')`;
+            } else if (name.startsWith('게임화면')) {
+              const fullBg = document.getElementById('fullBgLayer');
+              const canvasBg = document.getElementById('canvasBgLayer');
+              if (fullBg) fullBg.style.backgroundImage = `url('${downloadUrl}')`;
+              if (canvasBg) canvasBg.style.backgroundImage = `url('${downloadUrl}')`;
+            } else if (name.startsWith('노트') && !noteCustomImgLoaded) {
+              const testImg = new Image();
+              testImg.crossOrigin = 'anonymous';
+              testImg.onload = () => {
+                noteCustomImg = processNoteImage(testImg);
+                noteCustomImgLoaded = true;
+              };
+              testImg.src = downloadUrl;
+            } else {
+              barNames.forEach((bName, laneIdx) => {
+                if (name.startsWith(bName) && !barImagesLoaded[laneIdx]) {
+                  const rawImg = new Image();
+                  rawImg.crossOrigin = 'anonymous';
+                  rawImg.onload = () => {
+                    barImages[laneIdx] = processBarImage(rawImg) || rawImg;
+                    barImagesLoaded[laneIdx] = true;
+                  };
+                  rawImg.src = downloadUrl;
+                }
+              });
+            }
+          });
+        })
+        .catch(() => {});
+
+      // GitHub songs 폴더에서 음원 파일 동적 로드
+      loadGitHubSongs();
+    }
+
+    // GitHub songs 폴더 음원 목록 가져오기 및 UI 렌더링
+    function loadGitHubSongs() {
+      const repoUser = 'dolee-maker';
+      const repoName = 'rhythm';
+      const commitSha = 'd99dd60a6913c5677a0dee8321074b2df99f9de3';
+      const songsContainer = document.getElementById('songSelectGroup');
+      const badge = document.getElementById('songCountBadge');
+
+      const isAudio = (fname) => /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(fname);
+
+      // 1. 커밋 트리를 먼저 조회하고 실패 시 일반 contents/songs 폴더 조회
+      const treeUrl = `https://api.github.com/repos/${repoUser}/${repoName}/git/trees/${commitSha}?recursive=1`;
+      const contentsUrl = `https://api.github.com/repos/${repoUser}/${repoName}/contents/songs`;
+
+      function renderSongList(items) {
+        if (!items || items.length === 0) {
+          if (badge) badge.innerText = '음원 없음';
+          if (songsContainer) {
+            songsContainer.innerHTML = '<div class="text-xs text-rose-400 py-2 text-center font-bold">songs 폴더에 음원이 없습니다.</div>';
+          }
+          return;
+        }
+
+        songList = items;
+        currentSong = songList[0];
+        if (badge) badge.innerText = `${songList.length}곡 준비됨`;
+
+        if (songsContainer) {
+          songsContainer.innerHTML = songList.map((s, idx) => `
+            <button type="button" data-idx="${idx}" class="song-card-btn ${idx === 0 ? 'bg-pink-400 text-white border-pink-400 shadow-sm' : 'bg-white text-slate-700 border-pink-100'} p-2 rounded-xl text-xs font-bold border-2 flex items-center justify-between text-left transition-all">
+              <div class="flex items-center gap-2 truncate">
+                <i class="fa-solid fa-compact-disc ${idx === 0 ? 'text-white' : 'text-pink-400'}"></i>
+                <span class="truncate">${s.name}</span>
+              </div>
+              <span class="text-[10px] opacity-75 shrink-0 ml-1">선택</span>
+            </button>
+          `).join('');
+
+          // 클릭 이벤트 바인딩
+          const btns = songsContainer.querySelectorAll('.song-card-btn');
+          btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+              btns.forEach(b => {
+                b.className = 'song-card-btn bg-white text-slate-700 border-pink-100 p-2 rounded-xl text-xs font-bold border-2 flex items-center justify-between text-left transition-all';
+                const icon = b.querySelector('i');
+                if (icon) icon.className = 'fa-solid fa-compact-disc text-pink-400';
+              });
+              btn.className = 'song-card-btn bg-pink-400 text-white border-pink-400 shadow-sm p-2 rounded-xl text-xs font-bold border-2 flex items-center justify-between text-left transition-all';
+              const icon = btn.querySelector('i');
+              if (icon) icon.className = 'fa-solid fa-compact-disc text-white';
+
+              const sIdx = parseInt(btn.getAttribute('data-idx'), 10);
+              currentSong = songList[sIdx];
+            });
+          });
+        }
+      }
+
+      fetch(treeUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.tree) {
+            const audioFiles = data.tree.filter(item => item.path.startsWith('songs/') && isAudio(item.path));
+            if (audioFiles.length > 0) {
+              const formatted = audioFiles.map(file => {
+                const rawName = file.path.replace(/^songs\//, '');
+                const cleanName = rawName.replace(/\.[^/.]+$/, '');
+                const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
+                const url = `https://cdn.jsdelivr.net/gh/${repoUser}/${repoName}@${commitSha}/${encodedPath}`;
+                return { name: cleanName, filename: rawName, url };
+              });
+              renderSongList(formatted);
+              return;
+            }
+          }
+          throw new Error('tree not found or empty');
+        })
+        .catch(() => {
+          // Fallback to contents/songs
+          fetch(contentsUrl)
+            .then(res => res.json())
+            .then(data => {
+              if (Array.isArray(data)) {
+                const audios = data.filter(f => isAudio(f.name)).map(f => ({
+                  name: f.name.replace(/\.[^/.]+$/, ''),
+                  filename: f.name,
+                  url: f.download_url
+                }));
+                renderSongList(audios);
+              } else {
+                renderSongList([]);
+              }
+            })
+            .catch(() => renderSongList([]));
+        });
+    }
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // 오디오 정밀 시간 계산 함수 (음원 재생 위치와 60/120fps 부드러운 보간)
+    function getSongTime() {
+      if (!isPlaying) return 0;
+      if (bgAudio && !bgAudio.paused && !isPaused && isAudioClockReady) {
+        const est = audioBaseTime + (performance.now() - audioBasePerf) / 1000;
+        // 음원 실제 재생시간과 보간시간의 오차가 80ms 이상 벌어지면 리셋
+        if (Math.abs(est - bgAudio.currentTime) > 0.08) {
+          audioBaseTime = bgAudio.currentTime;
+          audioBasePerf = performance.now();
+          return bgAudio.currentTime;
+        }
+        return Math.max(0, est);
+      }
+      return Math.max(0, (performance.now() - songStartTime - totalPausedDuration) / 1000);
+    }
+
+    // 타격 효과음 (사용자 요청으로 음소거 유지)
+    function playHitSound(laneIdx, type) {}
+
+    // 배경 음악 재생 (선택된 GitHub 실제 음원 스트리밍 및 클록 캘리브레이션)
+    function startBGM(onReady) {
+      stopBGM();
+      if (!currentSong || !currentSong.url) {
+        if (onReady) onReady();
+        return;
+      }
+
+      isAudioClockReady = false;
+      bgAudio = new Audio();
+      bgAudio.crossOrigin = 'anonymous';
+      bgAudio.src = currentSong.url;
+      bgAudio.preload = 'auto';
+
+      bgAudio.addEventListener('loadedmetadata', () => {
+        if (bgAudio.duration && isFinite(bgAudio.duration)) {
+          songDuration = bgAudio.duration;
+        }
+      });
+
+      // 음원이 실제로 플레이를 시작하는 시점에 클록 기준 동기화
+      bgAudio.addEventListener('playing', () => {
+        audioBaseTime = bgAudio.currentTime;
+        audioBasePerf = performance.now();
+        isAudioClockReady = true;
+      });
+
+      bgAudio.addEventListener('timeupdate', () => {
+        if (!isPaused && bgAudio && !bgAudio.paused) {
+          audioBaseTime = bgAudio.currentTime;
+          audioBasePerf = performance.now();
+        }
+      });
+
+      bgAudio.addEventListener('ended', () => {
+        if (isPlaying) finishGame();
+      });
+
+      bgAudio.play().then(() => {
+        if (onReady) onReady();
+      }).catch(e => {
+        console.warn('Audio play prevented or error:', e);
+        if (onReady) onReady();
+      });
+    }
+
+    function stopBGM() {
+      if (bgAudio) {
+        try {
+          bgAudio.pause();
+          bgAudio.currentTime = 0;
+        } catch (e) {}
+        bgAudio = null;
+      }
+      isAudioClockReady = false;
+    }
+
+    // 곡 제목 기반 BPM 추정
+    function getSongBPM(songObj) {
+      const name = (songObj && songObj.name ? songObj.name : '').toLowerCase();
+      if (name.includes('hitori') || name.includes('혼잣말')) return 128;
+      if (name.includes('pajama') || name.includes('파자마')) return 136;
+      if (name.includes('dance') || name.includes('댄스')) return 142;
+      return 132;
+    }
+
+    // 박자 그리드 기반 정밀 채보 생성 (음악과 정확한 박자 싱크)
+    function generateChart() {
+      notes = [];
+      const bpm = getSongBPM(currentSong);
+      const secPerBeat = 60 / bpm;
+      
+      // 첫 노트가 떨어질 때까지 사용자가 보고 반응할 수 있는 리드인 타임(1.6초)
+      const leadInTime = 1.6;
+      const effectiveDuration = Math.max(10, songDuration - 1.5);
+      const totalQuarterBeats = Math.floor((effectiveDuration - leadInTime) / secPerBeat);
+
+      const laneBusyUntil = [0, 0, 0, 0];
+
+      // 박자 분할 (이지: 1박 위주, 노멀: 1박/반박, 하드: 엇박 & 연속음)
+      for (let beat = 0; beat < totalQuarterBeats; beat++) {
+        const baseHitTime = leadInTime + beat * secPerBeat;
+
+        // 마디 시작 정박은 높은 확률로 노트 생성
+        const isBarStart = beat % 4 === 0;
+        const prob = currentDiff === 'easy' ? (isBarStart ? 0.9 : 0.5) :
+                     currentDiff === 'normal' ? (isBarStart ? 0.95 : 0.75) : 0.88;
+
+        if (Math.random() < prob) {
+          const availLanes = [0, 1, 2, 3].filter(l => laneBusyUntil[l] <= baseHitTime);
+          if (availLanes.length > 0) {
+            const lane = availLanes[Math.floor(Math.random() * availLanes.length)];
+            
+            // 롱노트 생성 조건: 다음 박자까지 여유가 있고 24% 확률
+            const canLong = (beat + 2 < totalQuarterBeats) && Math.random() < 0.24;
+            const longDuration = canLong ? secPerBeat * (currentDiff === 'hard' ? 2 : 1.5) : 0;
+
+            notes.push({
+              lane,
+              hitTime: baseHitTime,
+              isLong: canLong,
+              duration: longDuration,
+              hit: false,
+              holding: false,
+              completed: false,
+              missed: false,
+              lastTickTime: 0
+            });
+
+            laneBusyUntil[lane] = baseHitTime + longDuration + secPerBeat * 0.45;
+          }
+        }
+
+        // 노멀/하드 난이도: 엇박(반박자, 8분음표) 리듬 추가
+        if (currentDiff !== 'easy' && Math.random() < (currentDiff === 'hard' ? 0.45 : 0.25)) {
+          const offBeatHitTime = baseHitTime + (secPerBeat * 0.5);
+          const availLanes = [0, 1, 2, 3].filter(l => laneBusyUntil[l] <= offBeatHitTime);
+          if (availLanes.length > 0) {
+            const lane = availLanes[Math.floor(Math.random() * availLanes.length)];
+            notes.push({
+              lane,
+              hitTime: offBeatHitTime,
+              isLong: false,
+              duration: 0,
+              hit: false,
+              holding: false,
+              completed: false,
+              missed: false,
+              lastTickTime: 0
+            });
+            laneBusyUntil[lane] = offBeatHitTime + secPerBeat * 0.4;
+          }
+        }
+      }
+
+      // 시간 순서대로 정렬
+      notes.sort((a, b) => a.hitTime - b.hitTime);
+      totalNotes = notes.length;
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvasWrapper');
+      if (!wrapper) return;
+      const rect = wrapper.getBoundingClientRect();
+      canvasW = rect.width;
+      canvasH = rect.height;
+      dpr = window.devicePixelRatio || 1;
+
+      canvas.width = Math.round(canvasW * dpr);
+      canvas.height = Math.round(canvasH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function handleCanvasTouch(e) {
+      if (!isPlaying || isPaused) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const laneWidth = canvasW / 4;
+      const touches = e.touches;
+
+      // 초기화
+      const activeLanes = [false, false, false, false];
+      for (let i = 0; i < touches.length; i++) {
+        const touch = touches[i];
+        const touchX = touch.clientX - rect.left;
+        const laneIdx = Math.floor(touchX / laneWidth);
+        if (laneIdx >= 0 && laneIdx < 4) {
+          activeLanes[laneIdx] = true;
+        }
+      }
+
+      for (let i = 0; i < 4; i++) {
+        if (activeLanes[i] && !keyStates[i]) {
+          triggerKeyPress(i);
+        } else if (!activeLanes[i] && keyStates[i]) {
+          triggerKeyRelease(i);
+        }
+      }
+    }
+
+    canvas.addEventListener('touchstart', handleCanvasTouch, { passive: false });
+    canvas.addEventListener('touchmove', handleCanvasTouch, { passive: false });
+    canvas.addEventListener('touchend', handleCanvasTouch, { passive: false });
+    canvas.addEventListener('touchcancel', (e) => {
+      for (let i = 0; i < 4; i++) triggerKeyRelease(i);
+    }, { passive: false });
+
+    // PC 키보드 지원
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape') {
+        pauseGame();
+        return;
+      }
+      if (!isPlaying || isPaused) return;
+      lanes.forEach((l, idx) => {
+        if (e.code === l.key && !keyStates[idx]) {
+          triggerKeyPress(idx);
+        }
+      });
+    });
+
+    window.addEventListener('keyup', (e) => {
+      lanes.forEach((l, idx) => {
+        if (e.code === l.key) {
+          triggerKeyRelease(idx);
+        }
+      });
+    });
+
+    function triggerKeyPress(laneIdx) {
+      keyStates[laneIdx] = true;
+      checkHit(laneIdx);
+    }
+
+    function triggerKeyRelease(laneIdx) {
+      keyStates[laneIdx] = false;
+      const now = getSongTime();
+
+      // 홀드 중이던 롱노트 처리
+      for (let n of notes) {
+        if (n.lane === laneIdx && n.holding && !n.completed) {
+          const remaining = (n.hitTime + n.duration) - now;
+          if (remaining <= 0.18) {
+            // 끝부분 근처에서 정상적으로 손을 뗀 경우 성공 완주
+            n.completed = true;
+            n.holding = false;
+            score += 500;
+            spawnHitEffect(laneIdx, lanes[laneIdx].color);
+          } else {
+            // 너무 일찍 손을 뗀 경우 끊김 미스
+            n.holding = false;
+            n.missed = true;
+            combo = 0;
+            judgePopup = {
+              text: '놓쳤다... 💦',
+              sub: 'MISS',
+              color: '#f43f5e',
+              time: performance.now(),
+              scale: 1.15
+            };
+          }
+        }
+      }
+    }
+
+    function checkHit(laneIdx) {
+      const now = getSongTime();
+      let closestNote = null;
+      let minDiff = 999;
+
+      for (let n of notes) {
+        if (n.lane === laneIdx && !n.hit && !n.missed) {
+          const diff = Math.abs(n.hitTime - now);
+          if (diff < minDiff && diff < 0.24) {
+            minDiff = diff;
+            closestNote = n;
+          }
+        }
+      }
+
+      if (closestNote) {
+        closestNote.hit = true;
+        hitNotes++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+
+        if (closestNote.isLong) {
+          closestNote.holding = true;
+          closestNote.lastTickTime = now;
+        }
+
+        let judgeType = 'PERFECT';
+        let judgeText = '와-앗! 🌸';
+        let judgeColor = '#ec4899';
+        let addScore = 1000;
+
+        if (minDiff <= 0.065) {
+          judgeType = 'PERFECT';
+          judgeText = '와-앗! 🌸';
+          judgeColor = '#ec4899';
+          addScore = 1000;
+        } else if (minDiff <= 0.13) {
+          judgeType = 'GREAT';
+          judgeText = '우라-! ⚡';
+          judgeColor = '#f59e0b';
+          addScore = 750;
+        } else {
+          judgeType = 'GOOD';
+          judgeText = '야하-! 🍡';
+          judgeColor = '#10b981';
+          addScore = 400;
+        }
+
+        score += addScore + combo * 10;
+        document.getElementById('scoreText').innerText = String(score).padStart(6, '0');
+
+        spawnHitEffect(laneIdx, judgeColor);
+
+        judgePopup = {
+          text: judgeText,
+          sub: judgeType,
+          color: judgeColor,
+          time: performance.now(),
+          scale: 1.25
+        };
+      }
+    }
+
+    function spawnHitEffect(laneIdx, color) {
+      const laneWidth = canvasW / 4;
+      const x = laneIdx * laneWidth + laneWidth / 2;
+      const y = canvasH * judgeLineYRatio;
+
+      // 세련된 충격파 링
+      shockwaves.push({
+        x, y,
+        radius: 12,
+        maxRadius: laneWidth * 0.52,
+        color,
+        alpha: 0.9,
+        time: performance.now()
+      });
+
+      // 반짝이는 라이트 스파크
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI * 2 * i) / 6 + (Math.random() * 0.4 - 0.2);
+        const speed = 40 + Math.random() * 70;
+        sparks.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 20,
+          color,
+          alpha: 1,
+          size: 2.5 + Math.random() * 2
+        });
+      }
+    }
+
+    let lastFrameTime = performance.now();
+    function gameLoop(now) {
+      const dt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+
+      if (isPlaying && !isPaused) {
+        update(now);
+      }
+      render(now);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function update(now) {
+      const elapsed = getSongTime();
+
+      // 프로그레스 바 갱신
+      const progressPct = Math.min(100, (elapsed / songDuration) * 100);
+      document.getElementById('progressBar').style.width = progressPct + '%';
+
+      // 롱노트 홀드 상태 및 틱 보너스 점수 갱신
+      for (let n of notes) {
+        if (n.isLong && n.holding && !n.completed) {
+          // 손가락이 해당 레인을 여전히 누르고 있는지 확인
+          if (!keyStates[n.lane]) {
+            n.holding = false;
+            if ((n.hitTime + n.duration) - elapsed > 0.18) {
+              n.missed = true;
+              combo = 0;
+              judgePopup = {
+                text: '놓쳤다... 💦',
+                sub: 'MISS',
+                color: '#f43f5e',
+                time: performance.now(),
+                scale: 1.15
+              };
+            } else {
+              n.completed = true;
+            }
+            continue;
+          }
+
+          // 홀드 유지 틱 점수 & 미니 스파크 방출
+          if (elapsed - n.lastTickTime >= 0.08) {
+            n.lastTickTime = elapsed;
+            score += 25;
+            document.getElementById('scoreText').innerText = String(score).padStart(6, '0');
+            spawnHitEffect(n.lane, lanes[n.lane].color);
+          }
+
+          // 롱노트 종료 시점 도달
+          if (elapsed >= n.hitTime + n.duration) {
+            n.completed = true;
+            n.holding = false;
+            score += 400;
+            spawnHitEffect(n.lane, lanes[n.lane].color);
+          }
+        }
+      }
+
+      // 미스 판정 체크
+      for (let n of notes) {
+        if (!n.hit && !n.missed && (elapsed - n.hitTime) > 0.22) {
+          n.missed = true;
+          combo = 0;
+          judgePopup = {
+            text: '후에에... 💦',
+            sub: 'MISS',
+            color: '#f43f5e',
+            time: performance.now(),
+            scale: 1.15
+          };
+        }
+      }
+
+      // 곡 종료 판정
+      if (elapsed >= songDuration + 0.8) {
+        finishGame();
+      }
+    }
+
+    function render(now) {
+      ctx.clearRect(0, 0, canvasW, canvasH);
+      const laneWidth = canvasW / 4;
+      const judgeY = canvasH * judgeLineYRatio;
+
+      // 1. 레인 세로 가이드 및 터치 글로우
+      for (let i = 0; i < 4; i++) {
+        const lx = i * laneWidth;
+
+        // 키를 눌렀을 때 모바일 탭 피드백 글로우
+        if (keyStates[i]) {
+          const grad = ctx.createLinearGradient(0, judgeY - 60, 0, canvasH);
+          grad.addColorStop(0, 'rgba(255,255,255,0)');
+          grad.addColorStop(1, lanes[i].lightColor);
+          ctx.fillStyle = grad;
+          ctx.fillRect(lx, 0, laneWidth, canvasH);
+        }
+
+        // 부드러운 점선 분할선
+        if (i > 0) {
+          ctx.save();
+          ctx.setLineDash([4, 6]);
+          ctx.strokeStyle = 'rgba(244, 114, 182, 0.28)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(lx, 0);
+          ctx.lineTo(lx, canvasH);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // 2. 판정 바 이미지 렌더링 (가로 꽉 채우고 안 잘림, DFJK 글자 없음)
+      for (let i = 0; i < 4; i++) {
+        const lx = i * laneWidth;
+        const centerX = lx + laneWidth / 2;
+        const barImg = barImages[i];
+        const isPressed = keyStates[i];
+
+        if (barImg && (barImg.width || barImg.naturalWidth)) {
+          const targetW = laneWidth - 4; // 가로 꽉 채움
+          const origW = barImg.width || barImg.naturalWidth;
+          const origH = barImg.height || barImg.naturalHeight;
+          const targetH = (targetW * origH) / origW;
+
+          ctx.save();
+          ctx.translate(centerX, judgeY);
+          if (isPressed) {
+            ctx.scale(0.96, 0.96);
+            ctx.shadowColor = lanes[i].color;
+            ctx.shadowBlur = 16;
+          }
+          ctx.drawImage(barImg, -targetW / 2, -targetH / 2, targetW, targetH);
+          ctx.restore();
+        } else {
+          // 로딩 전 폴백 바
+          ctx.save();
+          ctx.fillStyle = lanes[i].color;
+          ctx.shadowColor = lanes[i].color;
+          ctx.shadowBlur = isPressed ? 14 : 4;
+          const barW = laneWidth - 6;
+          const barH = 12;
+          ctx.beginPath();
+          ctx.roundRect(centerX - barW / 2, judgeY - barH / 2, barW, barH, 6);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // 3. 떨어지는 젤리 노트 및 롱노트 렌더링 (오디오 마스터 클록 싱크)
+      if (isPlaying && !isPaused) {
+        const elapsed = getSongTime();
+        const scrollSpeed = 380 * noteSpeedMultiplier; // px/sec
+
+        for (let n of notes) {
+          if (n.completed) continue;
+          if (!n.isLong && n.hit) continue;
+
+          const laneX = n.lane * laneWidth + laneWidth / 2;
+          const noteRadius = Math.min(22, (laneWidth * 0.35));
+
+          if (n.isLong) {
+            // 롱노트: 시작 Y와 끝 Y 계산
+            const timeToHead = n.hitTime - elapsed;
+            const timeToEnd = (n.hitTime + n.duration) - elapsed;
+
+            let headY = judgeY - timeToHead * scrollSpeed;
+            let tailY = judgeY - timeToEnd * scrollSpeed;
+
+            // 홀드 중일 때 머리는 판정선(judgeY)에 고정되고 꼬리가 내려옴
+            if (n.holding) {
+              headY = judgeY;
+            }
+
+            // 화면에 보이는 구간 렌더링
+            if (headY > -60 && tailY < canvasH + 60) {
+              const bodyW = noteRadius * 1.5;
+
+              ctx.save();
+              // 롱노트 리본 바디
+              const ribbonGrad = ctx.createLinearGradient(0, tailY, 0, headY);
+              ribbonGrad.addColorStop(0, lanes[n.lane].lightColor);
+              ribbonGrad.addColorStop(1, lanes[n.lane].color);
+
+              ctx.fillStyle = ribbonGrad;
+              ctx.globalAlpha = n.holding ? 0.9 : 0.72;
+              ctx.shadowColor = lanes[n.lane].color;
+              ctx.shadowBlur = n.holding ? 14 : 6;
+
+              ctx.beginPath();
+              ctx.roundRect(laneX - bodyW / 2, tailY, bodyW, Math.max(8, headY - tailY), bodyW / 2);
+              ctx.fill();
+
+              // 리본 중앙 하이라이트 라인
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+              ctx.lineWidth = 2.5;
+              ctx.beginPath();
+              ctx.moveTo(laneX, tailY + 4);
+              ctx.lineTo(laneX, headY - 4);
+              ctx.stroke();
+
+              // 꼬리 끝부분 캡
+              ctx.fillStyle = lanes[n.lane].color;
+              ctx.beginPath();
+              ctx.arc(laneX, tailY, bodyW / 2, 0, Math.PI * 2);
+              ctx.fill();
+
+              // 아직 안 눌린 상태면 머리 부분에 둥근 캔디 노트 표시
+              if (!n.hit) {
+                if (noteCustomImgLoaded && noteCustomImg) {
+                  const origW = noteCustomImg.naturalWidth || noteCustomImg.width || 1;
+                  const origH = noteCustomImg.naturalHeight || noteCustomImg.height || 1;
+                  const targetW = Math.min(laneWidth * 0.76, 46);
+                  const targetH = (targetW * origH) / origW;
+                  ctx.save();
+                  ctx.shadowColor = lanes[n.lane].color;
+                  ctx.shadowBlur = 8;
+                  ctx.drawImage(noteCustomImg, laneX - targetW / 2, headY - targetH / 2, targetW, targetH);
+                  ctx.restore();
+                } else {
+                  ctx.globalAlpha = 1;
+                  ctx.fillStyle = lanes[n.lane].color;
+                  ctx.beginPath();
+                  ctx.arc(laneX, headY, noteRadius, 0, Math.PI * 2);
+                  ctx.fill();
+
+                  // 광택
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                  ctx.beginPath();
+                  ctx.arc(laneX - noteRadius * 0.3, headY - noteRadius * 0.3, noteRadius * 0.38, 0, Math.PI * 2);
+                  ctx.fill();
+                }
+              }
+
+              ctx.restore();
+            }
+          } else {
+            // 일반 단타 캔디 노트
+            const timeToHit = n.hitTime - elapsed;
+            const noteY = judgeY - timeToHit * scrollSpeed;
+
+            if (noteY > -50 && noteY < canvasH + 20) {
+              ctx.save();
+              if (noteCustomImgLoaded && noteCustomImg) {
+                const origW = noteCustomImg.naturalWidth || noteCustomImg.width || 1;
+                const origH = noteCustomImg.naturalHeight || noteCustomImg.height || 1;
+                const targetW = Math.min(laneWidth * 0.76, 46);
+                const targetH = (targetW * origH) / origW;
+                ctx.shadowColor = lanes[n.lane].color;
+                ctx.shadowBlur = 10;
+                ctx.drawImage(noteCustomImg, laneX - targetW / 2, noteY - targetH / 2, targetW, targetH);
+              } else {
+                ctx.fillStyle = lanes[n.lane].color;
+                ctx.shadowColor = lanes[n.lane].color;
+                ctx.shadowBlur = 10;
+
+                // 둥근 캔디 노트
+                ctx.beginPath();
+                ctx.arc(laneX, noteY, noteRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 하이라이트 광택
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.beginPath();
+                ctx.arc(laneX - noteRadius * 0.3, noteY - noteRadius * 0.3, noteRadius * 0.38, 0, Math.PI * 2);
+                ctx.fill();
+              }
+              ctx.restore();
+            }
+          }
+        }
+      }
+
+      // 4. 모던 쇼크웨이브 링 & 라이트 스파크 이펙트
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.radius += (sw.maxRadius - sw.radius) * 0.22;
+        sw.alpha -= 0.055;
+
+        if (sw.alpha <= 0) {
+          shockwaves.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.strokeStyle = sw.color;
+          ctx.lineWidth = 3.5;
+          ctx.globalAlpha = Math.max(0, sw.alpha);
+          ctx.beginPath();
+          ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const sp = sparks[i];
+        sp.x += sp.vx * 0.016;
+        sp.y += sp.vy * 0.016;
+        sp.alpha -= 0.038;
+        if (sp.alpha <= 0) {
+          sparks.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.fillStyle = sp.color;
+          ctx.globalAlpha = Math.max(0, sp.alpha);
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // 5. 상단 판정 팝업 (박스 없이 깔끔한 외곽선 + 넉넉한 글자 간격)
+      if (judgePopup) {
+        const age = (now - judgePopup.time) / 1000;
+        if (age > 0.65) {
+          judgePopup = null;
+        } else {
+          const alpha = age < 0.45 ? 1 : Math.max(0, 1 - (age - 0.45) / 0.2);
+          const topY = canvasH * 0.14; // 상단 14% 영역
+
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.globalAlpha = alpha;
+
+          // 메인 먼작귀 리액션 ("와-앗! 🌸", "후에에... 💦")
+          ctx.font = 'bold 24px "Jua", sans-serif';
+          ctx.lineWidth = 4.5;
+          ctx.strokeStyle = '#ffffff';
+          ctx.strokeText(judgePopup.text, canvasW / 2, topY - 10);
+          ctx.fillStyle = judgePopup.color;
+          ctx.fillText(judgePopup.text, canvasW / 2, topY - 10);
+
+          // 하단 영문 판정 (간격을 28px 벌려 겹침 제거)
+          ctx.font = '900 15px "Nunito", sans-serif';
+          ctx.lineWidth = 3.5;
+          ctx.strokeStyle = '#ffffff';
+          ctx.strokeText(judgePopup.sub, canvasW / 2, topY + 18);
+          ctx.fillStyle = '#334155';
+          ctx.fillText(judgePopup.sub, canvasW / 2, topY + 18);
+
+          ctx.restore();
+        }
+      }
+    }
+
+    function startGame() {
+      initAudio();
+      document.getElementById('startModal').classList.add('hidden');
+      document.getElementById('pauseModal').classList.add('hidden');
+      document.getElementById('resultModal').classList.add('hidden');
+
+      score = 0;
+      combo = 0;
+      maxCombo = 0;
+      hitNotes = 0;
+      document.getElementById('scoreText').innerText = '000000';
+      document.getElementById('progressBar').style.width = '0%';
+
+      currentDiff = document.getElementById('diffSelect').value;
+      noteSpeedMultiplier = 1.5;
+
+      resizeCanvas();
+      generateChart();
+
+      isPlaying = true;
+      isPaused = false;
+      songStartTime = performance.now();
+      totalPausedDuration = 0;
+      audioBaseTime = 0;
+      audioBasePerf = performance.now();
+
+      // 실제 오디오 재생 시작 (스트림 버퍼 준비와 클록 연동)
+      startBGM(() => {
+        audioBaseTime = 0;
+        audioBasePerf = performance.now();
+      });
+    }
+
+    function pauseGame() {
+      if (!isPlaying || isPaused) return;
+      isPaused = true;
+      pauseStartTime = performance.now();
+      if (bgAudio) {
+        try { bgAudio.pause(); } catch (e) {}
+      }
+      document.getElementById('pauseModal').classList.remove('hidden');
+    }
+
+    function resumeGame() {
+      if (!isPaused) return;
+      isPaused = false;
+      totalPausedDuration += performance.now() - pauseStartTime;
+      if (bgAudio) {
+        bgAudio.play().then(() => {
+          audioBaseTime = bgAudio.currentTime;
+          audioBasePerf = performance.now();
+        }).catch(() => {});
+      }
+      document.getElementById('pauseModal').classList.add('hidden');
+    }
+
+    function finishGame() {
+      isPlaying = false;
+      isPaused = false;
+      stopBGM();
+
+      const acc = totalNotes > 0 ? Math.round((hitNotes / totalNotes) * 100) : 100;
+      document.getElementById('resultScore').innerText = score.toLocaleString();
+      document.getElementById('resultCombo').innerText = maxCombo;
+      document.getElementById('resultAcc').innerText = acc + '%';
+
+      if (acc >= 90) {
+        document.getElementById('resultTitle').innerText = '와-앗! 퍼펙트 클리어! 🌸';
+        document.getElementById('resultIcon').innerText = '👑';
+      } else if (acc >= 60) {
+        document.getElementById('resultTitle').innerText = '클리어 성공! 🍡';
+        document.getElementById('resultIcon').innerText = '🎉';
+      } else {
+        document.getElementById('resultTitle').innerText = '다음에 또 도전해봐! 💧';
+        document.getElementById('resultIcon').innerText = '🌱';
+      }
+
+      document.getElementById('resultModal').classList.remove('hidden');
+    }
+
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('pauseBtn').addEventListener('click', pauseGame);
+    document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+
+    document.getElementById('restartBtn').addEventListener('click', startGame);
+    document.getElementById('quitBtn').addEventListener('click', () => {
+      document.getElementById('pauseModal').classList.add('hidden');
+      document.getElementById('startModal').classList.remove('hidden');
+      isPlaying = false;
+      stopBGM();
+    });
+
+    document.getElementById('resultRetryBtn').addEventListener('click', startGame);
+    document.getElementById('resultHomeBtn').addEventListener('click', () => {
+      document.getElementById('resultModal').classList.add('hidden');
+      document.getElementById('startModal').classList.remove('hidden');
+    });
+
+    // 곡 선택 버튼 토글
+    const songBtns = document.querySelectorAll('.song-btn');
+    songBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        songBtns.forEach(b => {
+          b.classList.remove('active-btn', 'border-pink-400', 'bg-pink-400', 'text-white');
+          b.classList.add('border-transparent', 'bg-white', 'text-slate-700');
+        });
+        btn.classList.add('active-btn', 'border-pink-400', 'bg-pink-400', 'text-white');
+        btn.classList.remove('border-transparent', 'bg-white', 'text-slate-700');
+        currentSong = btn.getAttribute('data-song');
+      });
+    });
+
+    // 초기화
+    window.onload = function() {
+      resizeCanvas();
+      loadGitHubCustomAssets();
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
